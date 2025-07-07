@@ -53,15 +53,7 @@ def load_uciadult():
     ]
 
     df = load_or_download_csv(file_name, url, column_names)
-
-    # Replace missing value markers (" ?") with proper NaN
-    df.replace(" ?", pd.NA, inplace=True)
-
-    # Drop all rows with any missing values
-    df.dropna(inplace=True)
-
-    # Convert target variable "income" to binary: 1 if >50K, 0 otherwise
-    df["income"] = df["income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
-
+   
+    # fix the ? values -> should be nan
+    df.replace("?", pd.NA, inplace=True)
     return df
-

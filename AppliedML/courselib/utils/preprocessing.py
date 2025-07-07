@@ -33,3 +33,12 @@ def labels_to_numbers(labels, class_names=None):
         class_names = np.unique(labels)
     label_to_number = {label: i for i, label in enumerate(class_names)}
     return np.array([label_to_number[label] for label in labels])
+
+# number of duplicate entries in the data set
+def handle_duplicates(df):
+    num_duplicates = df.duplicated().sum()
+    if num_duplicates > 0:
+        print(num_duplicates, "duplicate observations in the dataset were removed.")
+        df.drop_duplicates(keep='first', inplace=True)
+    else:
+        print("There are no duplicated observations in the dataset.")
