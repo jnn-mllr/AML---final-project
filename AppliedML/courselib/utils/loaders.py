@@ -54,11 +54,13 @@ def load_uciadult():
 
     df = load_or_download_csv(file_name, url, column_names)
 
-    # 清洗缺失值（" ?" → NaN）
+    # Replace missing value markers (" ?") with proper NaN
     df.replace(" ?", pd.NA, inplace=True)
+
+    # Drop all rows with any missing values
     df.dropna(inplace=True)
 
-    # 转换目标变量
+    # Convert target variable "income" to binary: 1 if >50K, 0 otherwise
     df["income"] = df["income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
 
     return df
