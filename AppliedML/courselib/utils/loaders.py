@@ -43,3 +43,23 @@ def load_wine():
     df = load_or_download_csv(file_name, url, column_names)
     return df 
 
+def load_uciadult():
+    file_name = 'data/adult.data'
+    url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data'
+    column_names = [
+        "age", "workclass", "fnlwgt", "education", "education-num",
+        "marital-status", "occupation", "relationship", "race", "sex",
+        "capital-gain", "capital-loss", "hours-per-week", "native-country", "income"
+    ]
+
+    df = load_or_download_csv(file_name, url, column_names)
+
+    # 清洗缺失值（" ?" → NaN）
+    df.replace(" ?", pd.NA, inplace=True)
+    df.dropna(inplace=True)
+
+    # 转换目标变量
+    df["income"] = df["income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
+
+    return df
+
