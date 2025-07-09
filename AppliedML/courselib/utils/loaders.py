@@ -21,7 +21,11 @@ def load_uciadult():
         "capital-gain", "capital-loss", "hours-per-week", "native-country", "income"
     ]
 
-    df = load_or_download_csv(file_name, url, column_names)
+    try:
+        df = load_or_download_csv(file_name, url, column_names)
+    except Exception as e:
+        print(f"Error loading dataset: {e}")
+        return None
    
     # fix the ? values -> should be nan
     df.replace(" ?", pd.NA, inplace=True)
