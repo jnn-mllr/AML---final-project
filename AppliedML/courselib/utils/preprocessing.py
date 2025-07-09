@@ -59,26 +59,43 @@ def preprocess_data(df, nan_columns=None):
     num_duplicates = df.duplicated().sum()
     if num_duplicates > 0:
         print(f"{num_duplicates} duplicate observations in the dataset were removed.")
-        df.drop_duplicates(keep='first', inplace=True)
+        # Reassign instead of using inplace=True
+        df = df.drop_duplicates(keep='first')
     else:
         print("no duplicated observations in the dataset.")
 
-    # treat missing values aas separate category
+    # treat missing values as a separate category
     if nan_columns is None:
         nan_columns = df.select_dtypes(include=['object']).columns
     
     for col in nan_columns:
         if df[col].isnull().sum() > 0:
-            df[col].fillna('Missing', inplace=True)
+            # Reassign instead of using inplace=True
+            df[col] = df[col].fillna('Missing')
 
     # Strip leading/trailing whitespace from all object columns
     for col in df.select_dtypes(include='object').columns:
-        df[col] = df[col].str.strip()
+        # Ensure the column is of string type before using .str accessor
+        if pd.api.types.is_string_dtype(df[col]):
+            df[col] = df[col].str.strip()
 
     # Convert all object types to category types to save memory and speed up processing
-    # for col in df.select_dtypes(include=['object']).columns:
-    #    df[col] = df[col].astype('category')
-       
+    for col in df.select_dtypes(include=['object']).columns:
+       df[col] = df[col].astype('category')
+    return df
+
+# for later
+def transform_skewed_features(df, columns):
+    """
+    Applies a log1p transformation to skewed features and creates
+    binary indicators for non-zero values.
+    """
+    for col in columns:
+        # Create a binary indicator for non-zero values
+        df[f'has_{col}'] = (df[col] > 0).astype(int)
+        # Apply log1p transformation (log(1+x)) to handle zeros
+        df[col] = np.log1p(df[col])
+    print(f"Applied log1p transformation and created binary indicators for: {columns}")
     return df
 
 def ordinal_encode(df, ordinal_cols):
@@ -123,43 +140,58 @@ def frequency_encode(df, freq_cols):
         df.drop(col, axis=1, inplace=True)
     return df
 
-def target_encode(df, target_cols_list):
+def target_encode(df, target_cols_list, n_splits=5):
     """Target encoding to specified columns using cross-validation."""
     target_col = target_cols_list[0]
     features_to_encode = target_cols_list[1:]
+    
+    # Calculate the overall mean of the target variable for fallback
     global_mean = df[target_col].mean()
 
     for col in features_to_encode:
         encoded_col_name = col + '_target'
-        # df[encoded_col_name] = 0.0
-        df[encoded_col_name] = pd.Series(np.nan, index=df.index, dtype='float64')
-        # df[encoded_col_name] = np.nan
-
-        # Using the custom k_fold_split from courselib
-        all_indices = np.arange(len(df))
-        # Shuffle indices to ensure random folds
-        np.random.shuffle(all_indices)
-        fold_indices = np.array_split(all_indices, 5)
-
-        for i in range(5):
-            val_indices = fold_indices[i]
-            train_indices = np.concatenate([fold_indices[j] for j in range(5) if i != j])
-
-            train_fold_data = df.iloc[train_indices]
-            target_mean_map = train_fold_data.groupby(col)[target_col].mean()
-
-            val_fold_data = df.iloc[val_indices]
-            # df.loc[val_indices, encoded_col_name] = val_fold_data[col].map(target_mean_map)
-            mapped_values = val_fold_data[col].map(target_mean_map)
-            df.iloc[val_indices, df.columns.get_loc(encoded_col_name)] = mapped_values
-            # df[encoded_col_name] = df[encoded_col_name].astype(float)
-            # df.iloc[val_indices, df.columns.get_loc(encoded_col_name)] = mapped_values
         
-        # df[encoded_col_name].fillna(global_mean, inplace=True)
-        # df.drop(col, axis=1, inplace=True)   # This can lead to unexpected behavior in pandas.
-        df[encoded_col_name] = df[encoded_col_name].fillna(global_mean)
-        df = df.drop(columns=[col])
+        # Create a temporary DataFrame with the feature, target, and original index
+        temp_df = pd.DataFrame({
+            'feature': df[col],
+            'target': df[target_col],
+            'original_index': df.index
+        })
 
+        # Use k_fold_split, which returns lists of data chunks (folds)
+        # We pass the DataFrame values to it
+        folds = k_fold_split(temp_df.to_numpy(), temp_df.to_numpy(), k=n_splits)[0]
+
+        # Initialize the new column in the original DataFrame
+        df[encoded_col_name] = np.nan
+
+        # Iterate through each fold, treating it as the validation set
+        for i in range(len(folds)):
+            # The current fold is our validation set
+            val_fold_np = folds[i]
+            
+            # All other folds combined are our training set
+            train_folds_np = np.vstack([folds[j] for j in range(len(folds)) if i != j])
+            
+            # Convert back to DataFrames to use groupby and map
+            train_fold_df = pd.DataFrame(train_folds_np, columns=temp_df.columns)
+            val_fold_df = pd.DataFrame(val_fold_np, columns=temp_df.columns)
+
+            # Calculate the mean of the target for each category on the training fold
+            target_mean_map = train_fold_df.groupby('feature')['target'].mean()
+            
+            # Apply the mapping to the validation fold's feature column
+            # Use .get() with global_mean as a fallback for categories not in the training fold
+            mapped_values = val_fold_df['feature'].map(lambda x: target_mean_map.get(x, global_mean))
+            
+            # Get the original indices for the validation fold
+            original_indices = val_fold_df['original_index'].astype(int)
+            
+            # Assign the mapped values back to the correct rows in the original DataFrame
+            df.loc[original_indices, encoded_col_name] = mapped_values.values
+
+    # Drop the original columns after all encoding is done
+    df.drop(columns=features_to_encode, inplace=True)
     return df
 
 def encode_features(df, encoding_strategies):
