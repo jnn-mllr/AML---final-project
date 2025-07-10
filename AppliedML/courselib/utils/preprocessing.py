@@ -55,6 +55,9 @@ def preprocess_data(df, nan_columns=None):
     - pandas.DataFrame
         The preprocessed DataFrame with duplicates removed and missing values handled.
     """
+    # to avoid warnings
+    df = df.copy()
+
     # remove duplicates
     num_duplicates = df.duplicated().sum()
     if num_duplicates > 0:
@@ -91,11 +94,11 @@ def transform_skewed_features(df, columns):
     binary indicators for non-zero values.
     """
     for col in columns:
-        # Create a binary indicator for non-zero values
+        # binary indicator for non-zero values
         df[f'has_{col}'] = (df[col] > 0).astype(int)
-        # Apply log1p transformation (log(1+x)) to handle zeros
+        # log1p transformation (log(1+x)) to handle zeros
         df[col] = np.log1p(df[col])
-    print(f"Applied log1p transformation and created binary indicators for: {columns}")
+    print(f"log1p transformation and binary indicators for: {columns}")
     return df
 
 def ordinal_encode(df, ordinal_cols):
