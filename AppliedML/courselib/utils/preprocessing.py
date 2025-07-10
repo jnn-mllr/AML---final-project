@@ -73,21 +73,18 @@ def preprocess_data(df, nan_columns=None):
     
     for col in nan_columns:
         if df[col].isnull().sum() > 0:
-            # Reassign instead of using inplace=True
             df[col] = df[col].fillna('Missing')
 
-    # Strip leading/trailing whitespace from all object columns
+    # remove leading/trailing whitespace
     for col in df.select_dtypes(include='object').columns:
-        # Ensure the column is of string type before using .str accessor
         if pd.api.types.is_string_dtype(df[col]):
             df[col] = df[col].str.strip()
 
-    # Convert all object types to category types to save memory and speed up processing
+    # convert objects to categories to save memory and speed up processing
     for col in df.select_dtypes(include=['object']).columns:
        df[col] = df[col].astype('category')
     return df
 
-# for later
 def transform_skewed_features(df, columns):
     """
     Applies a log1p transformation to skewed features and creates
@@ -102,38 +99,46 @@ def transform_skewed_features(df, columns):
     return df
 
 def ordinal_encode(df, ordinal_cols):
-    """Applies ordinal encoding to specified columns using labels_to_numbers."""
-    print("Applying ordinal encoding...")
+    """Applies ordinal encoding to specified columns using
+       labels_to_numbers."""
     for col, order in ordinal_cols.items():
-        # Create a new column with the ordinal encoding
         df[col + '_ordinal'] = labels_to_numbers(df[col], class_names=order)
-        # Drop the original column
         df.drop(col, axis=1, inplace=True)
     return df
 
-def one_hot_encode(df, one_hot_cols):
-    """Applies one-hot encoding to specified columns using labels_encoding."""
-    print("Applying one-hot encoding...")
-    for col in one_hot_cols:
-        # Get the unique categories to use as column names
-        unique_cats = sorted(df[col].unique())
-        
-        # Perform one-hot encoding
+
+def one_hot_encode(df, one_hot_config):
+    """
+    Applies one-hot encoding to specified columns.
+
+    Parameters:
+    - df: pandas.DataFrame
+        The input DataFrame.
+    - one_hot_config: dict
+        - dict: A dictionary where keys are column names and values are the specific
+          categories to drop for each column to avoid multicollinearity.
+
+    Returns:
+    - pandas.DataFrame
+        The DataFrame with one-hot encoded features.
+    """
+    for col, category_to_drop in one_hot_config.items():
+        # one-hot-encoding
+        unique_cats = sorted(df[col].astype(str).unique())
         encoded_matrix = labels_encoding(df[col], labels=unique_cats, pos_value=1, neg_value=0)
-        
-        # Create a new DataFrame with the one-hot encoded columns
         encoded_df = pd.DataFrame(encoded_matrix, columns=[f"{col}_{cat}" for cat in unique_cats], index=df.index)
-        
-        # To avoid multicollinearity, we can drop one of the columns (optional, but good practice)
-        encoded_df.drop(columns=encoded_df.columns[0], inplace=True)
 
-        # Concatenate the new encoded columns with the original DataFrame
+        if category_to_drop:
+            # drop the specified category
+            col_to_drop = f"{col}_{category_to_drop}"
+            encoded_df.drop(columns=col_to_drop, inplace=True)
+        else:
+            encoded_df.drop(columns=encoded_df.columns[0], inplace=True)
+        # concat the dataframes
         df = pd.concat([df, encoded_df], axis=1)
-        
-        # Drop the original categorical column
         df.drop(col, axis=1, inplace=True)
-        
     return df
+
 
 def frequency_encode(df, freq_cols):
     """Frequency encoding to specified columns."""
@@ -147,53 +152,36 @@ def target_encode(df, target_cols_list, n_splits=5):
     """Target encoding to specified columns using cross-validation."""
     target_col = target_cols_list[0]
     features_to_encode = target_cols_list[1:]
-    
-    # Calculate the overall mean of the target variable for fallback
+    # overall mean of the target variable
     global_mean = df[target_col].mean()
-
     for col in features_to_encode:
         encoded_col_name = col + '_target'
-        
-        # Create a temporary DataFrame with the feature, target, and original index
+        # temporary DataFrame with feature, target, and original index
         temp_df = pd.DataFrame({
             'feature': df[col],
             'target': df[target_col],
             'original_index': df.index
         })
-
-        # Use k_fold_split, which returns lists of data chunks (folds)
-        # We pass the DataFrame values to it
+        # k_fold_split
         folds = k_fold_split(temp_df.to_numpy(), temp_df.to_numpy(), k=n_splits)[0]
-
-        # Initialize the new column in the original DataFrame
         df[encoded_col_name] = np.nan
-
-        # Iterate through each fold, treating it as the validation set
+        # iterate over folds
         for i in range(len(folds)):
-            # The current fold is our validation set
+            # current fold = validation set, rest = training 
             val_fold_np = folds[i]
-            
-            # All other folds combined are our training set
             train_folds_np = np.vstack([folds[j] for j in range(len(folds)) if i != j])
-            
-            # Convert back to DataFrames to use groupby and map
             train_fold_df = pd.DataFrame(train_folds_np, columns=temp_df.columns)
             val_fold_df = pd.DataFrame(val_fold_np, columns=temp_df.columns)
 
-            # Calculate the mean of the target for each category on the training fold
+            # mean of the target for each category on the training fold
             target_mean_map = train_fold_df.groupby('feature')['target'].mean()
-            
-            # Apply the mapping to the validation fold's feature column
-            # Use .get() with global_mean as a fallback for categories not in the training fold
+            # global_mean as a fallback for categories not in the training fold
             mapped_values = val_fold_df['feature'].map(lambda x: target_mean_map.get(x, global_mean))
             
-            # Get the original indices for the validation fold
+            # original indices for the validation fold
             original_indices = val_fold_df['original_index'].astype(int)
-            
-            # Assign the mapped values back to the correct rows in the original DataFrame
             df.loc[original_indices, encoded_col_name] = mapped_values.values
 
-    # Drop the original columns after all encoding is done
     df.drop(columns=features_to_encode, inplace=True)
     return df
 
