@@ -59,14 +59,18 @@ def plot_confusion_matrix(cm, cmap="Blues", figsize=(6, 5), class_names=None, ti
             )
 
     plt.tight_layout()
-    plt.show()
+    #plt.show()
+    plt.pause(0.01)
 
 def confusion_matrix(y_true, y_pred, num_classes=None, plot=True, **kwargs):
-    y_true = np.asarray(y_true)
-    y_pred = np.asarray(y_pred)
+    #y_true = np.asarray(y_true)
+    #y_pred = np.asarray(y_pred)
+    y_true = np.asarray(y_true).astype(int)
+    y_pred = np.asarray(y_pred).astype(int)
 
     if num_classes is None:
-        num_classes = y_true.shape[-1]
+        #num_classes = y_true.shape[-1]
+        num_classes = int(max(y_true.max(), y_pred.max())) + 1
     
     cm = np.zeros((num_classes, num_classes), dtype=int)
 

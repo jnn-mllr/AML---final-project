@@ -54,7 +54,7 @@ class TrainableModel:
         else:
             metrics_history = None
 
-        for _ in range(num_epochs):
+        for epoch in range(num_epochs):
             indices = np.random.permutation(len(X))
             batches = np.array_split(indices, np.ceil(len(X) / batch_size))
 
