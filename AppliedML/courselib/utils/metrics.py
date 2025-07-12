@@ -59,8 +59,7 @@ def plot_confusion_matrix(cm, cmap="Blues", figsize=(6, 5), class_names=None, ti
             )
 
     plt.tight_layout()
-    #plt.show()
-    plt.pause(0.01)
+    plt.show()
 
 def confusion_matrix(y_true, y_pred, num_classes=None, plot=True, **kwargs):
     y_true = np.asarray(y_true)
@@ -81,7 +80,30 @@ def confusion_matrix(y_true, y_pred, num_classes=None, plot=True, **kwargs):
 
 
 
+# new metrics for binary classification
+def precision_score(y_true, y_pred, pos_label=1):
+    """Calculates precision for a given positive label."""
+    true_positives = np.sum((y_true == pos_label) & (y_pred == pos_label))
+    predicted_positives = np.sum(y_pred == pos_label)
+    if predicted_positives == 0:
+        return 0.0
+    return true_positives / predicted_positives
 
+def recall_score(y_true, y_pred, pos_label=1):
+    """Calculates recall (sensitivity) for a given positive label."""
+    true_positives = np.sum((y_true == pos_label) & (y_pred == pos_label))
+    actual_positives = np.sum(y_true == pos_label)
+    if actual_positives == 0:
+        return 0.0
+    return true_positives / actual_positives
+
+def f1_score(y_true, y_pred, pos_label=1):
+    """Calculates the F1 score for a given positive label."""
+    precision = precision_score(y_true, y_pred, pos_label)
+    recall = recall_score(y_true, y_pred, pos_label)
+    if precision + recall == 0:
+        return 0.0
+    return 2 * (precision * recall) / (precision + recall)
 
 
 
