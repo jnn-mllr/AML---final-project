@@ -97,13 +97,6 @@ def recall_score(y_true, y_pred, pos_label=1):
         return 0.0
     return true_positives / actual_positives
 
-def f1_score(y_true, y_pred, pos_label=1):
-    """Calculates the F1 score for a given positive label."""
-    precision = precision_score(y_true, y_pred, pos_label)
-    recall = recall_score(y_true, y_pred, pos_label)
-    if precision + recall == 0:
-        return 0.0
-    return 2 * (precision * recall) / (precision + recall)
 
 
 

@@ -1,21 +1,26 @@
 from utils.metrics import confusion_matrix
+from utils.splits import k_fold_split
 import time
 import numpy as np
-
 import itertools
 
-class ModelEvaluator:
+class ModelTraining:
     """
-    Wrapper class to standardize training and evaluation of different models.
+    Wrapper for training and evaluation of models.
     """
-    def __init__(self, model, model_name, metrics_dict, plot_cm=True, **fit_params):
-        self.model = model
-        self.name = model_name
+    def __init__(self, model_class, model_name, init_params, metrics_dict, plot_cm=True, **fit_params):
+        # create the model
+        self.model_class = model_class
+        self.init_params = init_params
+        self.model_name = model_name
         self.fit_params = fit_params
+        self.model = self.model_class(**self.init_params)
+
+        # other parameters
         self.plot_cm = plot_cm # whether to plot the confusion matrix
         self.metrics_dict = metrics_dict
         self.training_time = 0.0
-        self.use_svm_labels = 'SVM' in self.name # detect if we include an SVM -> requires different logic
+        self.use_svm_labels = 'SVM' in self.model_name # detect if we include an SVM -> requires different logic
 
     def train(self, X_train, y_train):
         """
@@ -26,9 +31,7 @@ class ModelEvaluator:
         Args:
             X_train: The training feature data.
             y_train: The training target.
-        """
-        print(f"--- Training {self.name} ---")
-        
+        """        
         y_train_final = y_train
         if self.use_svm_labels:
             y_train_svm = y_train.copy()
@@ -36,6 +39,8 @@ class ModelEvaluator:
             y_train_final = y_train_svm
 
         start_time = time.time()
+        # re-initialize the model before training to ensure no leakage for cv
+        self.model = self.model_class(**self.init_params)
         self.model.fit(X_train, y_train_final, **self.fit_params)
         self.training_time = time.time() - start_time
 
@@ -58,11 +63,10 @@ class ModelEvaluator:
             y_pred[y_pred == -1] = 0
         
         # calc specified metrics
-        performance = {'Model': self.name, 'Training Time (s)': self.training_time}
+        performance = {'Model': self.model_name, 'Training Time (s)': self.training_time}
         for metric_name, metric_func in self.metrics_dict.items():
             score = metric_func(y_test, y_pred)
             performance[metric_name] = score
-            print(f"{metric_name}: {score:.4f}")
 
         # plot confusion matrix
         if self.plot_cm:
@@ -74,7 +78,7 @@ class ModelEvaluator:
         Plots a confusion matrix using the courselib implementation.
         """
         class_names = ['<=50K', '>50K']
-        title = f'Confusion Matrix for {self.name}'
+        title = f'Confusion Matrix for {self.model_name}'
         confusion_matrix(
             y_true, 
             y_pred, 
@@ -83,6 +87,55 @@ class ModelEvaluator:
             class_names=class_names, 
             title=title
         )
+        
+    def cross_validate(self, X, y, k_folds=5):
+        """
+        Performs k-fold cross-validation.
+
+        Args:
+            X (np.ndarray): The full training feature dataset.
+            y (np.ndarray): The full training label dataset.
+            k_folds (int): The number of folds to use for cross-validation.
+
+        Returns:
+            avg_performance: dictionary with mean and std for each metric.
+        """
+        print(f"CV for {self.model_name} with {k_folds} folds")
+        X_folds, y_folds = k_fold_split(X, y, k=k_folds)
+        
+        fold_metrics = {metric_name: [] for metric_name in self.metrics_dict.keys()}
+        fold_metrics['Training Time (s)'] = []
+
+        for i in range(k_folds):
+            print(f"Fold {i+1}")
+            X_train_fold = np.concatenate([X_folds[j] for j in range(k_folds) if j != i])
+            y_train_fold = np.concatenate([y_folds[j] for j in range(k_folds) if j != i])
+            X_val_fold, y_val_fold = X_folds[i], y_folds[i]
+
+            # train model on current fold
+            fold_evaluator = ModelTraining(
+                model_class=self.model_class,
+                init_params=self.init_params,
+                model_name=self.model_name,
+                metrics_dict=self.metrics_dict,
+                plot_cm=False,  # no plotting for every fold
+                **self.fit_params
+            )
+
+            fold_evaluator.train(X_train_fold, y_train_fold)
+            performance = fold_evaluator.evaluate(X_val_fold, y_val_fold)
+            
+            for metric_name in fold_metrics.keys():
+                fold_metrics[metric_name].append(performance[metric_name])
+
+        # average performance across all folds
+        avg_performance = {'Model': self.model_name}
+        for metric_name, scores in fold_metrics.items():
+            mean_score = np.mean(scores)
+            std_score = np.std(scores)
+            avg_performance[f"Mean {metric_name}"] = mean_score
+            avg_performance[f"Std {metric_name}"] = std_score        
+        return avg_performance
 
 
 
@@ -110,7 +163,7 @@ class GridSearch:
 
     def fit(self, X_train, y_train, X_val, y_val, **fit_params):
         """
-        Runs the grid search.
+        Runs a grid search.
         
         Args:
             X_train, y_train: Training data.
