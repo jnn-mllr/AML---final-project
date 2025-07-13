@@ -30,8 +30,6 @@ project/
 
 ## Results
 
-## Highlights
-
 ## Future Work
 
 ## References
