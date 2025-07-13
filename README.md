@@ -1,5 +1,5 @@
 # AML---final-project
-final proj for Applied Machine Learning for the Adult Data Set
+final project for Applied Machine Learning for the Adult Data Set
 # Income Prediction Using Categorical Data
 This project predicts whether an individual's income exceeds \$50K/year based on demographic and employment attributes. The dataset contains various categorical features and requires careful preprocessing, encoding, and model selection.
 
@@ -11,8 +11,8 @@ The goal of this project is to analyze the UCI Adult Income dataset and build cl
 ```
 project/
 │
-├── data/                      # Dataset files (adult.data, adult.test)
-├── splits/                    # Custom train-test split modules
+├── data/                      # Dataset (adult.data)
+├── splits/                    # train-test split modules
 ├── encoding/                  # Encoding strategies (one-hot, ordinal, target, etc.)
 ├── models/                    # Implementations of Logistic Regression, Decision Tree, Linear SVM
 ├── metrics/                   # Custom metrics (accuracy, confusion matrix, etc.)

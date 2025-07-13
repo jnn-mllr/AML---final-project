@@ -1,4 +1,5 @@
-from utils.metrics import confusion_matrix
+import pandas as pd
+from utils.metrics import accuracy, confusion_matrix
 from utils.splits import k_fold_split
 import time
 import numpy as np
@@ -21,8 +22,9 @@ class ModelTraining:
         self.metrics_dict = metrics_dict
         self.training_time = 0.0
         self.use_svm_labels = 'SVM' in self.model_name # detect if we include an SVM -> requires different logic
+        self.history = None
 
-    def train(self, X_train, y_train):
+    def train(self, X_train, y_train, X_test=None, y_test=None):
         """
         Trains the model on the data and measures training time.
 
@@ -34,14 +36,16 @@ class ModelTraining:
         """        
         y_train_final = y_train
         if self.use_svm_labels:
-            y_train_svm = y_train.copy()
-            y_train_svm[y_train == 0] = -1
-            y_train_final = y_train_svm
+            y_train[y_train.copy() == 0] = -1
 
         start_time = time.time()
         # re-initialize the model before training to ensure no leakage for cv
         self.model = self.model_class(**self.init_params)
-        self.model.fit(X_train, y_train_final, **self.fit_params)
+        self.history = self.model.train(
+            X_train, y_train, 
+            X_test, y_test, 
+            **self.fit_params
+        )        
         self.training_time = time.time() - start_time
 
 
@@ -142,73 +146,73 @@ class ModelTraining:
 # Hyperparameter-Tuning via Grid-Search
 class GridSearch:
     """
-    A simple grid search implementation to find the best hyperparameters for a model.
+    Simple grid search implementation to find the best hyperparameters for a model.
+    Does not use scikit-learn.
     """
-    def __init__(self, model_class, param_grid, scoring_metric, **const_params):
-        """
-        Args:
-            model_class: The class of the model to tune (e.g., LinearSVM).
-            param_grid (dict): Dictionary with parameter names as keys and lists of
-                               parameter settings to try as values.
-            scoring_metric (function): The metric to use for evaluation (e.g., f1_score).
-            **const_params: Constant parameters for the model initializer.
-        """
+    def __init__(self, model_class, param_grid, fixed_params=None, scoring='accuracy', cv=3):
         self.model_class = model_class
         self.param_grid = param_grid
-        self.scoring_metric = scoring_metric
-        self.const_params = const_params
-        self.best_score = -1
-        self.best_params = None
-        self.best_model = None
+        self.fixed_params = fixed_params if fixed_params else {}
+        self.scoring = scoring
+        self.cv = cv
+        self.cv_results_ = None
+        self.best_params_ = None
+        self.best_score_ = -np.inf
+        self.best_model_ = None
+        self.preprocess_params = None
 
-    def fit(self, X_train, y_train, X_val, y_val, **fit_params):
-        """
-        Runs a grid search.
-        
-        Args:
-            X_train, y_train: Training data.
-            X_val, y_val: Validation data for scoring models.
-            **fit_params: Constant parameters for the model's fit method.
-        """
-        # Generate all combinations of parameters
-        keys, values = zip(*self.param_grid.items())
+        self.scoring_metric = self._get_scoring_function(scoring)
+
+    def _get_scoring_function(self, scoring_name):
+        if scoring_name == 'accuracy':
+            return lambda y_true, y_pred: accuracy(y_pred, y_true, one_hot_encoded_labels=False)
+        else:
+            raise ValueError(f"Scoring method '{scoring_name}' not supported.")
+
+    def fit(self, X, y, X_val=None, y_val=None):
+        # Generate all combinations of parameters without sklearn
+        keys = self.param_grid.keys()
+        values = self.param_grid.values()
         param_combinations = [dict(zip(keys, v)) for v in itertools.product(*values)]
-
-        print(f"Starting Grid Search for {self.model_class.__name__}...")
-        print(f"Testing {len(param_combinations)} combinations.")
+        
+        results_list = []
 
         for params in param_combinations:
-            # Combine constant and grid parameters
-            current_params = {**self.const_params, **params}
+            current_params = {**self.fixed_params, **params}
             
-            # Create a new model instance with the current parameters
-            model = self.model_class(**current_params)
+            if self.preprocess_params and callable(self.preprocess_params):
+                current_params = self.preprocess_params(current_params.copy())
+
+            init_params = {k: v for k, v in current_params.items() if k in self.model_class.__init__.__code__.co_varnames}
+            fit_params = {k: v for k, v in current_params.items() if k not in init_params}
             
-            # Train the model
-            model.fit(X_train, y_train, **fit_params)
+            model = self.model_class(**init_params)
             
-            # Evaluate on the validation set
+            # Use the correct variable names X and y from the method arguments
+            model.fit(X, y, **fit_params)
+            
             y_pred = model(X_val)
             
-            # Handle SVM label conversion for scoring
+            # Handle SVM label conversion for scoring if necessary
+            y_pred_eval = y_pred.copy()
             if 'SVM' in self.model_class.__name__:
-                y_pred[y_pred == -1] = 0
+                y_pred_eval[y_pred_eval == -1] = 0
 
-            score = self.scoring_metric(y_val, y_pred)
+            score = self.scoring_metric(y_val, y_pred_eval)
             
             print(f"Params: {params} -> Score: {score:.4f}")
+            
+            run_result = {**params, 'score': score}
+            results_list.append(run_result)
 
-            # Update best score and params if current model is better
-            if score > self.best_score:
-                self.best_score = score
-                self.best_params = params
-                self.best_model = model
+            if score > self.best_score_:
+                self.best_score_ = score
+                self.best_params_ = params
+                self.best_model_ = model
         
-        print("\n--- Grid Search Complete ---")
-        print(f"Best Score: {self.best_score:.4f}")
-        print(f"Best Parameters: {self.best_params}")
+        self.cv_results_ = pd.DataFrame(results_list)
+        print(f"Best Score: {self.best_score_:.4f}")
+        print(f"Best Parameters: {self.best_params_}")
 
     def predict(self, X):
-        if self.best_model is None:
-            raise RuntimeError("You must call 'fit' before 'predict'.")
-        return self.best_model(X)
+        return self.best_model_(X)

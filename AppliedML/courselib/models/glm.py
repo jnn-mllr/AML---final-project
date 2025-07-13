@@ -13,7 +13,7 @@ class LogisticRegression(TrainableModel):
         - b: Initial bias (scalar)
         - optimizer: Optimizer object (e.g., GDOptimizer)
         - penalty: One of {"none", "ridge", "lasso"}
-        - alpha: Regularization strength (default: 0.0)
+        - lam: Regularization strength (default: 0.0)
     """
     
     def __init__(self, w, b, optimizer, penalty="none", lam=0.0):
@@ -31,9 +31,9 @@ class LogisticRegression(TrainableModel):
 
         # Add regularization if specified
         if self.penalty == "ridge":
-            grad_w += self.alpha * self.w
+            grad_w += self.lam * self.w
         elif self.penalty == "lasso":
-            grad_w += self.alpha * np.sign(self.w)
+            grad_w += self.lam * np.sign(self.w)
 
         return {"w": grad_w, "b": grad_b}
     
@@ -48,3 +48,23 @@ class LogisticRegression(TrainableModel):
 
     def __call__(self, X):
         return np.where(self.decision_function(X) >= 0.5, 1, 0)
+    
+    # new functions for training process 
+    def loss(self, X, y):
+        """
+        Computes the loss for the given data.
+        """
+        # prevent log(0)
+        epsilon = 1e-15
+        y_hat = np.clip(self.decision_function(X), epsilon, 1 - epsilon)
+        # Binary cross-entropy loss
+        bce_loss = -np.mean(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat))
+
+        # Add regularization term
+        reg_term = 0.0
+        if self.penalty == "ridge":
+            reg_term = 0.5 * self.lam * np.sum(self.w**2)
+        elif self.penalty == "lasso":
+            reg_term = self.lam * np.sum(np.abs(self.w))
+        
+        return bce_loss + reg_term

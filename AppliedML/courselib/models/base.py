@@ -69,3 +69,49 @@ class TrainableModel:
 
         return metrics_history
     
+
+    # new functions to visualize val metrics as well
+    def update(self, X, y):
+        """
+        Performs a single step of training.
+        1. Calculates gradients using the model's `loss_grad` method.
+        2. Updates the model's parameters using the optimizer.
+        """
+        # calculate gradients for current batch
+        grads = self.loss_grad(X, y)
+        # current parameters 
+        params = self._get_params()
+        # update the params
+        self.optimizer.update(params, grads)
+
+    def train(self, X, y, X_test=None, y_test=None, num_epochs=10, batch_size=32):
+        # save history of the metrics 
+        history = {
+            "train_loss": [],
+            "val_loss": [],
+            "train_acc": [],
+            "val_acc": []
+        }
+        for epoch in range(num_epochs):
+            # one training step
+            train_loss_epoch = 0
+            for i in range(0, len(X), batch_size):
+                X_batch = X[i:i+batch_size]
+                y_batch = y[i:i+batch_size]
+                grads = self.loss_grad(X_batch, y_batch)
+                self.optimizer.update(self._get_params(), grads)
+            
+            # training metrics for the epoch
+            train_loss = self.loss(X, y)
+            train_acc = np.mean(self(X) == y)
+            history["train_loss"].append(train_loss)
+            history["train_acc"].append(train_acc)
+
+            # validation metrics for the epoch
+            if X_test is not None and y_test is not None:
+                val_loss = self.loss(X_test, y_test)
+                val_acc = np.mean(self(X_test) == y_test)
+                history["val_loss"].append(val_loss)
+                history["val_acc"].append(val_acc)
+        
+        return history

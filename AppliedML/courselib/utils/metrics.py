@@ -98,5 +98,52 @@ def recall_score(y_true, y_pred, pos_label=1):
     return true_positives / actual_positives
 
 
+def plot_training_history(history, model_name):
+    """Plots the training and validation loss and accuracy."""
+    fig, ax = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # Plot Loss
+    ax[0].plot(history['train_loss'], label='Training Loss', color='#00246B')
+    if history.get('val_loss'):
+        ax[0].plot(history['val_loss'], label='Validation Loss', color='#CADCFC', linestyle='--')
+    ax[0].set_title(f'{model_name} - Loss Over Epochs')
+    ax[0].set_xlabel('Epoch')
+    ax[0].set_ylabel('Binary Cross-Entropy Loss')
+    ax[0].legend()
+    ax[0].grid(True, linestyle='--', alpha=0.6)
+
+    # Plot Accuracy
+    ax[1].plot(history['train_accuracy'], label='Training Accuracy', color='#00246B')
+    if history.get('val_accuracy'):
+        ax[1].plot(history['val_accuracy'], label='Validation Accuracy', color='#CADCFC', linestyle='--')
+    ax[1].set_title(f'{model_name} - Accuracy Over Epochs')
+    ax[1].set_xlabel('Epoch')
+    ax[1].set_ylabel('Accuracy')
+    ax[1].legend()
+    ax[1].grid(True, linestyle='--', alpha=0.6)
+    
+    plt.tight_layout()
+    plt.show()
 
 
+# # training and validation loss
+# plt.figure(figsize=(12, 5))
+# plt.subplot(1, 2, 1)
+# plt.plot(history['train_loss'], label='Training Loss')
+# plt.plot(history['val_loss'], label='Validation Loss')
+# plt.title('Loss Over Epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('Loss')
+# plt.legend()
+
+# # training and validation accuracy
+# plt.subplot(1, 2, 2)
+# plt.plot(history['train_acc'], label='Training Accuracy')
+# plt.plot(history['val_acc'], label='Validation Accuracy')
+# plt.title('Accuracy Over Epochs')
+# plt.xlabel('Epochs')
+# plt.ylabel('Accuracy')
+# plt.legend()
+
+# plt.tight_layout()
+# plt.show()
