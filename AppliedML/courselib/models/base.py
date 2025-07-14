@@ -70,20 +70,7 @@ class TrainableModel:
         return metrics_history
     
 
-    # new functions to visualize val metrics as well
-    def update(self, X, y):
-        """
-        Performs a single step of training.
-        1. Calculates gradients using the model's `loss_grad` method.
-        2. Updates the model's parameters using the optimizer.
-        """
-        # calculate gradients for current batch
-        grads = self.loss_grad(X, y)
-        # current parameters 
-        params = self._get_params()
-        # update the params
-        self.optimizer.update(params, grads)
-
+    # new training function to visualize val metrics as well
     def train(self, X, y, X_test=None, y_test=None, num_epochs=10, batch_size=32):
         # save history of the metrics 
         history = {
@@ -92,14 +79,21 @@ class TrainableModel:
             "train_acc": [],
             "val_acc": []
         }
+        num_samples = len(X)
         for epoch in range(num_epochs):
-            # one training step
-            train_loss_epoch = 0
-            for i in range(0, len(X), batch_size):
-                X_batch = X[i:i+batch_size]
-                y_batch = y[i:i+batch_size]
+            # shuffle training data at the start of each epoch
+            indices = np.random.permutation(num_samples)
+            X_shuffled = X#[indices]
+            y_shuffled = y#[indices]
+
+            # one training step (full epoch through all batches)
+            for i in range(0, num_samples, batch_size):
+                X_batch = X_shuffled[i:i+batch_size]
+                y_batch = y_shuffled[i:i+batch_size]
+                # calc grads, then params and update the optimzation scheme
                 grads = self.loss_grad(X_batch, y_batch)
-                self.optimizer.update(self._get_params(), grads)
+                params = self._get_params()
+                self.optimizer.update(params, grads)
             
             # training metrics for the epoch
             train_loss = self.loss(X, y)
@@ -113,5 +107,4 @@ class TrainableModel:
                 val_acc = np.mean(self(X_test) == y_test)
                 history["val_loss"].append(val_loss)
                 history["val_acc"].append(val_acc)
-        
         return history

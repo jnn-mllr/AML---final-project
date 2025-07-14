@@ -148,72 +148,115 @@ def frequency_encode(df, freq_cols):
         df.drop(col, axis=1, inplace=True)
     return df
 
-def target_encode(df, target_cols_list, n_splits=5):
-    """Target encoding to specified columns using cross-validation."""
-    target_col = target_cols_list[0]
-    features_to_encode = target_cols_list[1:]
-    # overall mean of the target variable
-    global_mean = df[target_col].mean()
-    for col in features_to_encode:
-        encoded_col_name = col + '_target'
-        # temporary DataFrame with feature, target, and original index
-        temp_df = pd.DataFrame({
-            'feature': df[col],
-            'target': df[target_col],
-            'original_index': df.index
-        })
-        # k_fold_split
-        folds = k_fold_split(temp_df.to_numpy(), temp_df.to_numpy(), k=n_splits)[0]
-        df[encoded_col_name] = np.nan
-        # iterate over folds
-        for i in range(len(folds)):
-            # current fold = validation set, rest = training 
-            val_fold_np = folds[i]
-            train_folds_np = np.vstack([folds[j] for j in range(len(folds)) if i != j])
-            train_fold_df = pd.DataFrame(train_folds_np, columns=temp_df.columns)
-            val_fold_df = pd.DataFrame(val_fold_np, columns=temp_df.columns)
+def target_encode(df, target_cols_list, n_splits=5, fit_maps=None):
+    """Target encoding with CV for fitting, and simple mapping for transforming."""
+    df = df.copy()
+    
+    # Handle the dictionary format from encoding_strategies
+    if isinstance(target_cols_list, dict):
+        features_to_encode = list(target_cols_list.keys())
+        target_col = list(target_cols_list.values())[0]
+    else: # Keep old list-based logic for backward compatibility
+        target_col = target_cols_list[0]
+        features_to_encode = target_cols_list[1:]
 
-            # mean of the target for each category on the training fold
-            target_mean_map = train_fold_df.groupby('feature')['target'].mean()
-            # global_mean as a fallback for categories not in the training fold
-            mapped_values = val_fold_df['feature'].map(lambda x: target_mean_map.get(x, global_mean))
+    is_fitting = fit_maps is None
+
+    if is_fitting:
+        # FIT MODE: Use CV and learn global maps
+        fit_maps = {'_global_mean': df[target_col].mean()}
+        for col in features_to_encode:
+            fit_maps[col] = df.groupby(col, observed=False)[target_col].mean()
+
+        for col in features_to_encode:
+            encoded_col_name = col + '_target'
+            df[encoded_col_name] = np.nan
             
-            # original indices for the validation fold
-            original_indices = val_fold_df['original_index'].astype(int)
-            df.loc[original_indices, encoded_col_name] = mapped_values.values
+            # WORKAROUND: Pass indices to k_fold_split to get folds of indices
+            all_indices = np.arange(len(df))
+            # k_fold_split requires a Y array, so we create a dummy one.
+            dummy_y = np.zeros(len(df))
+            # The function returns (X_folds, Y_folds). We only need the first part.
+            val_index_folds = k_fold_split(all_indices, dummy_y, k=n_splits)[0]
+            
+            for val_indices in val_index_folds:
+                # Determine train indices by excluding validation indices
+                train_indices = np.setdiff1d(all_indices, val_indices)
+                
+                # Use the integer indices to safely slice the DataFrame
+                train_fold, val_fold = df.iloc[train_indices], df.iloc[val_indices]
+                
+                target_mean_map = train_fold.groupby(col,  observed=False)[target_col].mean()
+                fold_global_mean = train_fold[target_col].mean()
+                
+                # Convert to float BEFORE filling, to avoid TypeError with categorical dtype
+                mapped_values = val_fold[col].map(target_mean_map).astype(float).fillna(fold_global_mean)
+                df.loc[val_fold.index, encoded_col_name] = mapped_values
+        
+        df.drop(columns=features_to_encode, inplace=True)
+        return df, fit_maps
+    
+    else:
+        # TRANSFORM MODE: Apply learned maps
+        global_mean = fit_maps['_global_mean']
+        for col in features_to_encode:
+            mapping = fit_maps[col]
+            # Convert to float before filling NaNs to avoid TypeError
+            df[col + '_target'] = df[col].map(mapping).astype(float).fillna(global_mean)
+        
+        df.drop(columns=features_to_encode, inplace=True)
+        return df
 
-    df.drop(columns=features_to_encode, inplace=True)
-    return df
-
-def encode_features(df, encoding_strategies):
+def encode_features(df, encoding_strategies, fit_params=None):
     """
-    Applies specified encoding strategies to categorical features in a DataFrame
-    by calling dedicated encoding functions.
-
-    Parameters:
-    - df: pandas.DataFrame
-        The input DataFrame.
-    - encoding_strategies: dict
-        A dictionary where keys are encoding strategy names ('one-hot', 'ordinal',
-        'frequency', 'target') and values are the columns or configurations
-        for that strategy.
+    Encodes features of a DataFrame based on specified strategies.
+    Can operate in 'fit' (learning) or 'transform' (applying) mode.
+    
+    Args:
+        df (pd.DataFrame): The dataframe to encode.
+        encoding_strategies (dict): The strategies for encoding.
+        fit_params (dict, optional): Learned parameters from a previous fit. 
+                                     If None, the function is in 'fit' mode.
+                                     Defaults to None.
 
     Returns:
-    - pandas.DataFrame
-        The DataFrame with features encoded according to the specified strategies.
+        If fitting (fit_params is None):
+            - pd.DataFrame: The encoded dataframe.
+            - dict: The learned parameters.
+        If transforming (fit_params is not None):
+            - pd.DataFrame: The encoded dataframe.
     """
-    df_encoded = df.copy()
+    df = df.copy()
+    is_fitting = fit_params is None
+    if is_fitting:
+        fit_params = {}
 
+    # Ordinal encoding is stateless as the order is predefined
     if 'ordinal' in encoding_strategies:
-        df_encoded = ordinal_encode(df_encoded, encoding_strategies['ordinal']) 
+        df = ordinal_encode(df, encoding_strategies['ordinal'])
 
-    if 'one-hot' in encoding_strategies:
-        df_encoded = one_hot_encode(df_encoded, encoding_strategies['one-hot'])
-
-    if 'frequency' in encoding_strategies:
-        df_encoded = frequency_encode(df_encoded, encoding_strategies['frequency'])
-
+    # Target encoding with fit/transform logic
     if 'target' in encoding_strategies:
-        df_encoded = target_encode(df_encoded, encoding_strategies['target'])
+        if is_fitting:
+            df, target_maps = target_encode(df, encoding_strategies['target'])
+            fit_params['target_maps'] = target_maps
+        else:
+            df = target_encode(df, encoding_strategies['target'], fit_maps=fit_params.get('target_maps'))
 
-    return df_encoded
+    # One-hot encoding with fit/transform logic
+    if 'one-hot' in encoding_strategies:
+        # Using pandas get_dummies is more standard and handles the logic well
+        cols_to_encode = list(encoding_strategies['one-hot'].keys())
+        if is_fitting:
+            df_encoded = pd.get_dummies(df, columns=cols_to_encode, drop_first=True)
+            fit_params['one_hot_columns'] = df_encoded.columns.tolist()
+            df = df_encoded
+        else:
+            df = pd.get_dummies(df, columns=cols_to_encode, drop_first=True)
+            # Ensure test set has same columns as train set
+            df = df.reindex(columns=fit_params.get('one_hot_columns', df.columns), fill_value=0)
+
+    if is_fitting:
+        return df, fit_params
+    else:
+        return df

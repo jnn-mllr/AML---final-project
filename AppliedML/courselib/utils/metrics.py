@@ -113,9 +113,9 @@ def plot_training_history(history, model_name):
     ax[0].grid(True, linestyle='--', alpha=0.6)
 
     # Plot Accuracy
-    ax[1].plot(history['train_accuracy'], label='Training Accuracy', color='#00246B')
-    if history.get('val_accuracy'):
-        ax[1].plot(history['val_accuracy'], label='Validation Accuracy', color='#CADCFC', linestyle='--')
+    ax[1].plot(history['train_acc'], label='Training Accuracy', color='#00246B')
+    if history.get('val_acc'):
+        ax[1].plot(history['val_acc'], label='Validation Accuracy', color='#CADCFC', linestyle='--')
     ax[1].set_title(f'{model_name} - Accuracy Over Epochs')
     ax[1].set_xlabel('Epoch')
     ax[1].set_ylabel('Accuracy')

@@ -71,41 +71,6 @@ class StandardScaler:
         self.fit(X)
         return self.transform(X)
 
-
-class MinMaxScaler:
-    """
-    MinMaxScaler scales features to a given range, typically [0, 1].
-    """
-
-    def __init__(self):
-        self.min_ = None
-        self.scale_ = None
-
-    def fit(self, X):
-        """
-        Compute the minimum and maximum to be used for later scaling.
-        """
-        self.min_ = np.min(X, axis=0)
-        self.scale_ = np.max(X, axis=0) - self.min_
-        # To avoid division by zero
-        self.scale_[self.scale_ == 0] = 1
-        return self
-
-    def transform(self, X):
-        """
-        Scale features of X according to feature_range.
-        """
-        if self.min_ is None or self.scale_ is None:
-            raise RuntimeError("You must fit the scaler before transforming data.")
-        return (X - self.min_) / self.scale_
-
-    def fit_transform(self, X):
-        """
-        Fit to data, then transform it.
-        """
-        return self.fit(X).transform(X)
-
-
 def standardize(x):
     """
     Standardization normalization.
