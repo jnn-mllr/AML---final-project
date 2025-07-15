@@ -116,8 +116,11 @@ class ModelTraining:
             y_train_fold = np.concatenate([y_folds[j] for j in range(k_folds) if j != i])
             X_val_fold, y_val_fold = X_folds[i], y_folds[i]
 
+            # re-initialize the model for each fold to ensure it's fresh
+            current_model = self.model_class(**self.init_params)
+
             # train model on current fold
-            fold_evaluator = ModelTraining(
+            fold_trainer = ModelTraining(
                 model_class=self.model_class,
                 init_params=self.init_params,
                 model_name=self.model_name,
@@ -125,9 +128,10 @@ class ModelTraining:
                 plot_cm=False,  # no plotting for every fold
                 **self.fit_params
             )
+            fold_trainer.model = current_model # Assign the fresh model
 
-            fold_evaluator.train(X_train_fold, y_train_fold)
-            performance = fold_evaluator.evaluate(X_val_fold, y_val_fold)
+            fold_trainer.train(X_train_fold, y_train_fold)
+            performance = fold_trainer.evaluate(X_val_fold, y_val_fold)
             
             for metric_name in fold_metrics.keys():
                 fold_metrics[metric_name].append(performance[metric_name])
