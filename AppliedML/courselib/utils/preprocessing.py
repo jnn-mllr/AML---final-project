@@ -91,8 +91,6 @@ def log_transform(df, columns):
     binary indicators for non-zero values.
     """
     for col in columns:
-        # binary indicator for non-zero values
-        df[f'has_{col}'] = (df[col] > 0).astype(int)
         # log1p transformation (log(1+x)) to handle zeros
         df[col] = np.log1p(df[col])
     return df

@@ -83,13 +83,14 @@ class TrainableModel:
         for epoch in range(num_epochs):
             # shuffle training data at the start of each epoch
             indices = np.random.permutation(num_samples)
-            X_shuffled = X#[indices]
-            y_shuffled = y#[indices]
+            X_shuffled = X[indices]
+            y_shuffled = y[indices]
 
             # one training step (full epoch through all batches)
             for i in range(0, num_samples, batch_size):
                 X_batch = X_shuffled[i:i+batch_size]
                 y_batch = y_shuffled[i:i+batch_size]
+                
                 # calc grads, then params and update the optimzation scheme
                 grads = self.loss_grad(X_batch, y_batch)
                 params = self._get_params()
