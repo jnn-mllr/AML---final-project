@@ -53,8 +53,8 @@ class ModelTraining:
         """
         Evaluates the model using the metrics dictionary and returns the results.
         Args:
-            X_test: The test feature data.
-            y_test: The test target.
+            X_test: test feature data.
+            y_test: test target.
 
         Returns:
             performance: dictionary containing the model's name, training time,
@@ -97,9 +97,9 @@ class ModelTraining:
         Performs k-fold cross-validation.
 
         Args:
-            X (np.ndarray): The full training feature dataset.
-            y (np.ndarray): The full training label dataset.
-            k_folds (int): The number of folds to use for cross-validation.
+            X : training dataset
+            y : target.
+            k_folds (int): number of folds for cv.
 
         Returns:
             avg_performance: dictionary with mean and std for each metric.
@@ -213,6 +213,35 @@ class GridSearch:
         self.cv_results_ = pd.DataFrame(results_list)
         print(f"Best Score: {self.best_score_:.4f}")
         print(f"Best Parameters: {self.best_params_}")
+
+    def predict(self, X):
+        return self.best_model_(X)
+    
+class SimpleGridSearch:
+    def __init__(self, model_class, param_grid, scoring):
+        self.model_class = model_class
+        self.param_grid = param_grid
+        self.scoring = scoring
+        self.best_score_ = -float('inf')
+        self.best_params_ = None
+        self.best_model_ = None
+
+    def fit(self, X, y, X_val, y_val):
+        keys = list(self.param_grid.keys())
+        values = list(self.param_grid.values())
+        for combo in itertools.product(*values):
+            params = dict(zip(keys, combo))
+            model = self.model_class(**params)
+            model.fit(X, y)
+            y_pred = model(X_val)
+            score = self.scoring(y_val, y_pred)
+            print(f"Params: {params} -> Score: {score:.4f}")
+            if score > self.best_score_:
+                self.best_score_ = score
+                self.best_params_ = params
+                self.best_model_ = model
+        print(f"Best Score: {self.best_score_:.4f}")
+        print(f"Best Params: {self.best_params_}")
 
     def predict(self, X):
         return self.best_model_(X)
