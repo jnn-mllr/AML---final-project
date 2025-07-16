@@ -63,8 +63,7 @@ class LogisticRegression(TrainableModel):
         # regularization terms
         reg_term = 0.0
         if self.penalty == "ridge":
-            reg_term = 0.5 * self.lam * np.sum(self.w**2)
+            reg_term = 0.5 * self.lam * np.sum(self.w**2) / len(X)
         elif self.penalty == "lasso":
-            reg_term = self.lam * np.sum(np.abs(self.w))
-        
+            reg_term = self.lam * np.sum(np.abs(self.w)) / len(X)
         return bce_loss + reg_term

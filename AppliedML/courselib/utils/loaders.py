@@ -29,6 +29,6 @@ def load_uciadult():
    
     # fix the ? values -> should be nan
     df = df.replace(" ?", pd.NA)
-    # convert target variable "income" to binary: 1 if >50K, 0 else
+    # target variable "income" to binary: 1 if >50K, 0 else
     df["income"] = df["income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
     return df
