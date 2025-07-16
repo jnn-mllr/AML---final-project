@@ -1,32 +1,32 @@
-# Income Prediction Using Categorical Data
+## 🧠 Income Prediction Using Categorical Data
 
-### 🎯 Overall Goal
+### 🎯 Project Objective
 
-- Predict whether an individual's income exceeds $50K per year:
-    - **binary classification task**
+This project aims to **predict whether an individual's income exceeds \$50K per year**, based on U.S. census demographic data. We emphasize:
+- **Binary classification**
+- **Model interpretability and reproducibility**
+- **Systematic comparison of categorical encoding strategies**
 
-- Build interpretable and reproducible machine learning models
-    - **model interpretability, reproducibility**
+---
 
-- Explore how different categorical encoding strategies affect model performance
-    - **encoding choice impacts accuracy and generalization**
+### 📦 Dataset
 
-### 📊 Dataset & Features
+- **Source:** [UCI Adult Census Income Dataset](https://archive.ics.uci.edu/ml/datasets/adult)
+- **Rows:** 48,842 instances  
+- **Features:**  
+  - **Numerical:** `age`, `fnlwgt`, `education-num`, `capital-gain`, `capital-loss`, `hours-per-week`  
+  - **Categorical:** `workclass`, `education`, `marital-status`, `occupation`, `relationship`, `race`, `sex`, `native-country`  
+- **Target:** `income` (binary: `>50K` vs `<=50K`)  
+- **Challenge:** Highly imbalanced classes and many high-cardinality categorical variables
 
-- UCI Adult dataset
-    - **census income data, demographic variables, occupation, education**
+---
 
-- Mixed feature types
-    - **numerical features: age, hours-per-week**
-    - **categorical features: workclass, education, marital-status, occupation, etc.**
-
-- Class imbalance
-    - *more samples with income ≤ $50K*
-
-### 🧠 Models & Methods
+### 🚀 Models & Methods
 
 - Logistic Regression
-    - **interpretable, baseline model, supports regularization (L1, L2, elasticnet)**
+    - **interpretable, baseline model, regularization (L1, L2, elasticnet)**
+
+---
 
 ### 🔧 Encoding Strategies
 
@@ -42,13 +42,25 @@
 - Target Encoding with Cross-Validation
     - **risk of target leakage, CV necessary to avoid data leakage**
 
-### 📂 Files
-- [📘 Notebook: Income Prediction Using Categorical Data](notebooks/main.ipynb)
+---
 
-### 🧾 References
-~ UCI Adult Census Income
+### 📌 How to Run
 
-🔗 ~ https://archive.ics.uci.edu/ml/datasets/adult
+1. Clone this repository
+2. Install dependencies (see `requirements.txt` or use `conda`)
+3. Run the notebook:
+   ```bash
+   jupyter notebook notebooks/main.ipynb
+
+---
+
+### 📈 Key Results
+
+- **Best accuracy**: ~0.85 (Logistic Regression with L2 and Target Encoding)
+- **Target Encoding (with CV)** offered the best trade-off between compactness and accuracy
+- **Interpretable model** via odds-ratios from logistic coefficients
+
+---
 
 ### 👥 Authors
 - 🧑‍💻 Janne Miller — j.miller@campus.lmu.de 
