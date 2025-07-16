@@ -49,7 +49,7 @@ class LogisticRegression(TrainableModel):
     def __call__(self, X):
         return np.where(self.decision_function(X) >= 0.5, 1, 0)
     
-    # new functions for training process 
+    # new functions for training process to vis loss during train/test 
     def loss(self, X, y):
         """
         Computes the loss for the given data.
@@ -60,7 +60,7 @@ class LogisticRegression(TrainableModel):
         # Binary cross-entropy loss
         bce_loss = -np.mean(y * np.log(y_hat) + (1 - y) * np.log(1 - y_hat))
 
-        # Add regularization term
+        # regularization terms
         reg_term = 0.0
         if self.penalty == "ridge":
             reg_term = 0.5 * self.lam * np.sum(self.w**2)

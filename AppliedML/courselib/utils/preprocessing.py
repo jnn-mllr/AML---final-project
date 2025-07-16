@@ -36,24 +36,11 @@ def labels_to_numbers(labels, class_names=None):
     label_to_number = {label: i for i, label in enumerate(class_names)}
     return np.array([label_to_number[label] for label in labels])
 
+
+# our functions for preprocessing and encoding
 def preprocess_data(df, nan_columns=None):
     """
-    Removes duplicate rows and missing values in a DataFrame.
-
-    This function first removes duplicate rows to ensure data integrity. It then
-    replaces missing values (NaN) in specified categorical columns with the
-    string 'Missing', treating them as a distinct category.
-
-    Parameters:
-    - df: pandas.DataFrame
-        The DataFrame to process.
-    - nan_columns: list of str, optional
-        A list of column names in which to fill missing values. If None, the function
-        targets all columns with an 'object' dtype.
-
-    Returns:
-    - pandas.DataFrame
-        The preprocessed DataFrame with duplicates removed and missing values handled.
+    Removes duplicate rows and missing values in dataset
     """
     # to avoid warnings
     df = df.copy()
@@ -70,12 +57,11 @@ def preprocess_data(df, nan_columns=None):
     # treat missing values as a separate category
     if nan_columns is None:
         nan_columns = df.select_dtypes(include=['object']).columns
-    
     for col in nan_columns:
         if df[col].isnull().sum() > 0:
             df[col] = df[col].fillna('Missing')
 
-    # remove leading/trailing whitespace
+    # remove leading/trailing whitespace of they exist
     for col in df.select_dtypes(include='object').columns:
         if pd.api.types.is_string_dtype(df[col]):
             df[col] = df[col].str.strip()
@@ -107,14 +93,6 @@ def ordinal_encode(df, ordinal_cols):
 def one_hot_encode(df, one_hot_config):
     """
     Applies one-hot encoding to specified columns.
-
-    Parameters:
-    - df: input DataFrame.
-    - one_hot_config: dictionary where keys are column names and values are the specific
-          categories to drop for each column to avoid multicollinearity.
-
-    Returns:
-    - df: DataFrame with one-hot encoded features.
     """
     for col, category_to_drop in one_hot_config.items():
         # one-hot-encoding
@@ -160,7 +138,7 @@ def frequency_encode(df, freq_cols, fit_maps=None):
         if col + '_freq' in df.columns:
             df[col + '_freq'] = df[col + '_freq'].astype(float).fillna(0)
         df.drop(col, axis=1, inplace=True)
-
+    # return correct params for fitting/training
     if is_fitting:
         return df, fit_maps
     else:
@@ -206,7 +184,6 @@ def target_encode(df, target_cols_list, n_splits=5, fit_maps=None):
             df[col + '_target'] = df[col + '_target'].astype(float).fillna(global_mean)
         df.drop(columns=features_to_encode, inplace=True)
         return df, fit_maps
-
     else:
         # transform using train mappings
         global_mean = fit_maps['_global_mean']
@@ -258,7 +235,7 @@ def encode_features(df, encoding_strategies, fit_params=None):
         else:
             #fill missing cols with 0 in test data (i.e. unseen categories in training process)
             df = df.reindex(columns=fit_params.get('one_hot_columns', df.columns), fill_value=0)
-
+    
     if is_fitting:
         return df, fit_params
     else:
@@ -267,8 +244,8 @@ def encode_features(df, encoding_strategies, fit_params=None):
 
 def encode_and_align_features(train_df, test_df, encoding_strategies, drop_cols=None):
     """
-    Encodes train and test DataFrames using the provided encoding strategies,
-    aligns columns, drops specified columns, and prints final shapes.
+    Encodes train and test data with provided encoding strategies,
+    aligns cols, drops specified columns, prints final shapes.
     """
     # learn the parameters for test data transformation
     train_df_encoded, fit_params = encode_features(train_df, encoding_strategies)
