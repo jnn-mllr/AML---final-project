@@ -24,9 +24,13 @@ This project aims to **predict whether an individual's income exceeds \$50K per 
 ### 🚀 Models & Methods
 
 - Logistic Regression
+<<<<<<< HEAD
     - **interpretable, baseline model, regularization (L1, L2, elasticnet)**
 
 ---
+=======
+    - **interpretable, baseline model, supports regularization (L1, L2)**
+>>>>>>> bc57715c92d3de495382cb09bf455db8310e379b
 
 ### 🔧 Encoding Strategies
 
