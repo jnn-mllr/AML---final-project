@@ -27,8 +27,9 @@ def min_max(x):
 class StandardScaler:
     """
     Standardizes features by removing the mean and scaling to variance 1.
+    This class is needed to avoid data leakage when applying the normal
+    standardization without separate fi and transform steps. 
     """
-
     def __init__(self, numerical_indices=None):
         """
         Initializes the StandardScaler.

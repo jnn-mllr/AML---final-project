@@ -26,7 +26,7 @@
 ### 🧠 Models & Methods
 
 - Logistic Regression
-    - **interpretable, baseline model, supports regularization (L1, L2, elasticnet)**
+    - **interpretable, baseline model, supports regularization (L1, L2)**
 
 ### 🔧 Encoding Strategies
 

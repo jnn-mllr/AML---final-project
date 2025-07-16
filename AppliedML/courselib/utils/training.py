@@ -4,10 +4,11 @@ from utils.splits import k_fold_split
 import time
 import numpy as np
 
-# new class for training process - originally to compare many models, now just specifications of logreg
+# new class for training process
 class ModelTraining:
     """
-    Wrapper for training and evaluation of models
+    Wrapper for training and evaluation of models - originally to compare
+    many different models now just for specifications of logreg :(
     """
     def __init__(self, model_class, model_name, init_params, metrics_dict, plot_cm=True, **fit_params):
         # create the model
