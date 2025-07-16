@@ -13,8 +13,10 @@ def load_or_download_csv(file_name, url, column_names=None, encoding='utf-8'):
         return df
 
 def load_uciadult():
-    file_name = 'data/adult.data'
-    url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data'
+    url_train = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+    url_test = "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.test"
+    file_train = 'data/adult.data'
+    file_test = 'data/adult.test'
     column_names = [
         "age", "workclass", "fnlwgt", "education", "education-num",
         "marital-status", "occupation", "relationship", "race", "sex",
@@ -22,13 +24,18 @@ def load_uciadult():
     ]
 
     try:
-        df = load_or_download_csv(file_name, url, column_names)
+        df_train = load_or_download_csv(file_train, url_train, column_names=column_names)
+        df_test = load_or_download_csv(file_test, url_test, column_names=column_names)
+        df = pd.concat([df_train, df_test], ignore_index=True)
+        print("Full dataset shape (rows, columns):", df.shape)    
     except Exception as e:
         print(f"Error loading dataset: {e}")
         return None
    
     # fix the ? values -> should be nan
     df = df.replace(" ?", pd.NA)
-    # target variable "income" to binary: 1 if >50K, 0 else
-    df["income"] = df["income"].apply(lambda x: 1 if x.strip() == ">50K" else 0)
+    # target variable "income" to binary: 1 if >50K or >50K., 0 else
+    df["income"] = df["income"].apply(
+        lambda x: 1 if isinstance(x, str) and x.strip().replace('.', '') == ">50K" else 0
+    )
     return df
