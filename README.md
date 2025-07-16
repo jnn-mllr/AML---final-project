@@ -50,8 +50,7 @@
 
 🔗 ~ https://archive.ics.uci.edu/ml/datasets/adult
 
-### 🧑‍🏫 Author
-```
-Janne Miller 
-Yupeng Cheng
-```
+### 👥 Authors
+- 🧑‍💻 Janne Miller — j.miller@campus.lmu.de 
+- 🧑‍💻 Yupeng Cheng — y.cheng1@campus.lmu.de  
+
