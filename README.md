@@ -57,8 +57,8 @@ This project aims to **predict whether an individual's income exceeds \$50K per 
 ### 📈 Key Results
 
 - **Best accuracy**: ~0.85 (Logistic Regression with L2 and Target Encoding)
-- **Target Encoding (with CV)** offered the best trade-off between compactness and accuracy
-- **Interpretable model** via odds-ratios from logistic coefficients
+- **Target Encoding (with CV)**: offered the best trade-off between compactness and accuracy
+- **Interpretable model**: via odds-ratios from logistic coefficients
 
 ---
 
