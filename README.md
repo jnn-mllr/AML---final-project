@@ -14,51 +14,43 @@
 ### 📊 Dataset & Features
 
 - UCI Adult dataset
-    - census income data, demographic variables, occupation, education
+    - **census income data, demographic variables, occupation, education**
 
 - Mixed feature types
-    - numerical features: age, hours-per-week
-    - categorical features: workclass, education, marital-status, occupation, etc.
+    - **numerical features: age, hours-per-week**
+    - **categorical features: workclass, education, marital-status, occupation, etc.**
 
 - Class imbalance
-    - more samples with income ≤ $50K
+    - *more samples with income ≤ $50K*
 
 ### 🧠 Models & Methods
 
 - Logistic Regression
-    - interpretable, baseline model, supports regularization (L1, L2, elasticnet)
-
-- Decision Tree
-    - non-linear, handles categorical inputs naturally, feature importance visualization
-
-- Linear SVM
-    - sensitive to feature scaling, high-dimensional feature space
-
+    - **interpretable, baseline model, supports regularization (L1, L2, elasticnet)**
 
 ### 🔧 Encoding Strategies
 
 - One-Hot Encoding
-    - high-dimensional, sparse representation
+    - **high-dimensional, sparse representation**
 
 - Ordinal Encoding
-    - order imposed, may introduce artificial relationship
+    - **order imposed, may introduce artificial relationship**
 
 - Frequency Encoding
-    - encodes based on category frequency, compact but may lose semantics
+    - **encodes based on category frequency, compact but may lose semantics**
 
 - Target Encoding with Cross-Validation
-    - risk of target leakage, CV necessary to avoid data leakage
+    - **risk of target leakage, CV necessary to avoid data leakage**
 
 ### 📂 Files
-- [📘 Notebook: Income Prediction Using Categorical Data] (notebooks/main.ipynb)
+- [📘 Notebook: Income Prediction Using Categorical Data](notebooks/main.ipynb)
 
-## References
+### 🧾 References
 ~ UCI Adult Census Income
 
-~ https://archive.ics.uci.edu/ml/datasets/adult
+🔗 ~ https://archive.ics.uci.edu/ml/datasets/adult
 
-## Author
-```
-Janne Miller 
-Yupeng Cheng
-```
+### 👥 Authors
+- 🧑‍💻 Janne Miller — j.miller@campus.lmu.de 
+- 🧑‍💻 Yupeng Cheng — y.cheng1@campus.lmu.de  
+
