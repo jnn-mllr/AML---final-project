@@ -1,77 +1,56 @@
-# AML---final-project
-final project for Applied Machine Learning for the Adult Data Set
 # Income Prediction Using Categorical Data
 
-## Project Overview
+### 🎯 Overall Goal
 
-This project predicts whether an individual earns more than \$50,000/year using demographic and employment attributes from the UCI Adult Income dataset. Since most features are categorical, we explore how different encoding strategies impact both performance and interpretability in linear models.
+- Predict whether an individual's income exceeds $50K per year:
+    - **binary classification task**
 
-We compare **one-hot, ordinal, frequency, and target encoding (with cross-validation leakage control)** and implement custom machine learning models (e.g., logistic regression) from scratch, fully integrated into a modular pipeline.
+- Build interpretable and reproducible machine learning models
+    - **model interpretability, reproducibility**
 
-## Project Structure
+- Explore how different categorical encoding strategies affect model performance
+    - **encoding choice impacts accuracy and generalization**
 
-```
-project/
-│project/
-├── main.ipynb                        # Full end-to-end notebook: loading, encoding, training, evaluation
-├── requirements.txt                  # List of Python dependencies
-├── data/                             # Raw data files (adult.data, adult.test)
-├── encoding/                         # Custom encoding modules (one-hot, ordinal, frequency, target with CV)
-├── models/                           # Implementations of logistic regression, linear SVM, etc.
-├── tune/                             # Grid search and hyperparameter tuning
-├── utils/
-│ ├── loaders.py                      # Data loading and parsing
-│ ├── preprocessing.py                # Feature engineering and transformations
-│ ├── normalization.py                # Custom scaler (standardization)
-│ ├── splits.py                       # Stratified train-test split
-│ ├── metrics.py                      # Accuracy, precision, recall, confusion matrix
-│ ├── training.py                     # Model training wrapper and CV logic
-```
+### 📊 Dataset & Features
 
-## 📊 Encoding Strategies
-| Encoding    | Description                                                     | Use Case                            |
-| ----------- | --------------------------------------------------------------- | ----------------------------------- |
-| One-hot     | Convert each category to separate binary columns                | Nominal features                    |
-| Ordinal     | Map ordered categories to integers                              | Ordered features (e.g. education)   |
-| Frequency   | Replace category with frequency in training set                 | High-cardinality features           |
-| Target (CV) | Replace category with mean target, computed using CV for safety | Powerful, leakage-prone if careless |
+- UCI Adult dataset
+    - census income data, demographic variables, occupation, education
 
+- Mixed feature types
+    - numerical features: age, hours-per-week
+    - categorical features: workclass, education, marital-status, occupation, etc.
 
-## Results
+- Class imbalance
+    - more samples with income ≤ $50K
 
-| Encoding     | Model                  | Accuracy | Precision | Recall |
-|--------------|------------------------|----------|-----------|--------|
-| One-hot      | Logistic (base)        | 0.11     | 0.11      | 0.11   |
-| Ordinal      | Logistic (ridge)       | 0.11     | 0.11      | 0.11   |
-| Target (CV)  | Logistic (tuned)       | 0.11     | 0.11      | 0.11   |
+### 🧠 Models & Methods
+
+- Logistic Regression
+    - interpretable, baseline model, supports regularization (L1, L2, elasticnet)
+
+- Decision Tree
+    - non-linear, handles categorical inputs naturally, feature importance visualization
+
+- Linear SVM
+    - sensitive to feature scaling, high-dimensional feature space
 
 
-## 🧪 Models & Evaluation
+### 🔧 Encoding Strategies
 
-    Logistic Regression (no/weak/strong ridge/lasso regularization)
+- One-Hot Encoding
+    - high-dimensional, sparse representation
 
-    Training method: Batch Gradient Descent
+- Ordinal Encoding
+    - order imposed, may introduce artificial relationship
 
-    Metrics: Accuracy, Precision, Recall
+- Frequency Encoding
+    - encodes based on category frequency, compact but may lose semantics
 
-    Leakage prevention: Target encoding only uses out-of-fold statistics
+- Target Encoding with Cross-Validation
+    - risk of target leakage, CV necessary to avoid data leakage
 
-    Scaling: StandardScaler applied to numeric columns
-
-## 📌 Best Model (TO FILL)
-
-    Type: Logistic Regression
-
-    Penalty: TO_FILL (none / ridge / lasso)
-
-    λ: TO_FILL
-
-    Accuracy: TO_FILL
-
-    Precision: TO_FILL
-
-    Recall: TO_FILL
-
+### 📂 Files
+- [📘 Notebook: Income Prediction Using Categorical Data] (notebooks/main.ipynb)
 
 ## References
 ~ UCI Adult Census Income
