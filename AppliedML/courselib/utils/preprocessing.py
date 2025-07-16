@@ -158,7 +158,7 @@ def frequency_encode(df, freq_cols, fit_maps=None):
 
         # fill unseen categories with 0 frequency and drop original
         if col + '_freq' in df.columns:
-            df[col + '_freq'].fillna(0, inplace=True)
+            df[col + '_freq'] = df[col + '_freq'].astype(float).fillna(0)
         df.drop(col, axis=1, inplace=True)
 
     if is_fitting:
@@ -263,3 +263,21 @@ def encode_features(df, encoding_strategies, fit_params=None):
         return df, fit_params
     else:
         return df
+    
+
+def encode_and_align_features(train_df, test_df, encoding_strategies, drop_cols=None):
+    """
+    Encodes train and test DataFrames using the provided encoding strategies,
+    aligns columns, drops specified columns, and prints final shapes.
+    """
+    # learn the parameters for test data transformation
+    train_df_encoded, fit_params = encode_features(train_df, encoding_strategies)
+    # transform test data with learned parameters
+    test_df_encoded = encode_features(test_df, encoding_strategies, fit_params=fit_params)
+    test_df_encoded = test_df_encoded.reindex(columns=train_df_encoded.columns, fill_value=0)
+    if drop_cols:
+        train_df_encoded.drop(drop_cols, axis=1, inplace=True)
+        test_df_encoded.drop(drop_cols, axis=1, inplace=True)
+    print("Train encoded shape:", train_df_encoded.shape)
+    print("Test encoded shape:", test_df_encoded.shape)
+    return train_df_encoded, test_df_encoded, fit_params

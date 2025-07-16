@@ -78,3 +78,22 @@ def train_test_split_np(X, Y, training_data_fraction=0.8, shuffle=True):
     Y = np.array(Y)
 
     return X[train_idx], Y[train_idx], X[test_idx], Y[test_idx]
+
+
+def split_features_and_target(train_df_encoded, test_df_encoded, target_col='income'):
+    """
+    Splits encoded train and test DataFrames into features (X) and target (y), converts to numpy arrays,
+    and prints shapes and class balance.
+    """
+    X_train = train_df_encoded.drop(target_col, axis=1).astype(float).to_numpy()
+    y_train = train_df_encoded[target_col].to_numpy()
+    X_test = test_df_encoded.drop(target_col, axis=1).astype(float).to_numpy()
+    y_test = test_df_encoded[target_col].to_numpy()
+
+    print("X_train shape:", X_train.shape)
+    print("X_test shape:", X_test.shape)
+    print("y_train shape:", y_train.shape)
+    print("y_test shape:", y_test.shape)
+    print("Train class balance:", np.mean(y_train))
+    print("Test class balance:", np.mean(y_test))
+    return X_train, y_train, X_test, y_test

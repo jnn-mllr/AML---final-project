@@ -93,3 +93,19 @@ def min_max(x):
     - numpy array of the same shape as x, with all values scaled to the range [0, 1]
     """
     return (x - np.min(x, axis=0)) / (np.max(x, axis=0) - np.min(x, axis=0))
+
+
+def scale_numerical_features(X_train, X_test, train_df_encoded, numerical_cols):
+    """
+    Scales only the specified numerical columns in X_train and X_test using StandardScaler.
+    Returns the scaled versions of X_train and X_test, and the scaler object.
+    """
+    # column indices for numerical columns
+    X_columns = train_df_encoded.drop('income', axis=1).columns
+    numerical_indices = [X_columns.get_loc(col) for col in numerical_cols]
+
+    # initialize and fit scaler
+    scaler = StandardScaler(numerical_indices=numerical_indices)
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+    return X_train_scaled, X_test_scaled
